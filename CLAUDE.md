@@ -1,39 +1,41 @@
-# LoyaltyCard — Project Context
+# LoyaltyCard
 
-## What This Is
-White-label SaaS product: digital loyalty stamp card for Portuguese cafés, bakeries, salons, and barbershops.
-Target market: small businesses that currently use paper stamp cards.
+Digital loyalty stamp card system for Portuguese local businesses (cafes, bakeries, salons, barbershops).
 
-## Stack Decisions
-- **Frontend/Backend**: Next.js 16 + TypeScript + Tailwind CSS (App Router, server components)
-- **Database**: PostgreSQL + Prisma ORM
-- **Hosting**: Vercel (free tier to start)
-- **PWA**: Progressive Web App — no native app download required, works via browser
-- **Notifications**: Push notifications (web push) + SMS for near-reward nudges
+## Stack
+- **Framework:** Next.js 16, App Router, TypeScript
+- **Styling:** Tailwind CSS v4, lucide-react icons, Inter font
+- **Database:** Prisma + SQLite (schema at `prisma/schema.prisma`)
+- **Language:** All UI in Portuguese
 
 ## Architecture
-- Multi-tenant: each business is a tenant
-- Customer-facing: PWA that stores loyalty card in browser, add-to-homescreen prompt
-- Business-facing: admin panel for card design, reward config, analytics
-- QR code at counter: customer scans to receive a stamp (authenticated via phone number or cookie)
-- Stamp validation: server-side to prevent fraud (QR contains a rotating token)
+- `src/app/page.tsx` — Landing page (hero, features, pricing)
+- `src/app/entrar/` — Sign in
+- `src/app/registar/` — Sign up
+- `src/app/painel/` — Business dashboard (layout with sidebar)
+  - `page.tsx` — Overview stats
+  - `cartoes/` — Loyalty card designer and list
+  - `clientes/` — Customer management
+  - `recompensas/` — Rewards management
+  - `qr-balcao/` — Counter QR code for scanning
+  - `definicoes/` — Business settings
+- `src/app/c/[slug]/` — Public customer card view
+- `src/app/carimbo/[slug]/` — Stamp confirmation page (after QR scan)
+- `src/app/api/` — API routes (cards, customers, rewards, stamps)
 
-## Key Domain Rules
-- Stamp card: configurable number of stamps to earn reward (default: 10)
-- Rewards: free item, percentage discount, or custom — configured per card
-- Nudge notifications: trigger when customer is 1-2 stamps away from reward
-- Analytics: active customers, return rate, redemption rate, stamps per day
-- No app install: PWA with service worker for offline card display
-- Anti-fraud: QR codes rotate, stamps require proximity (business scans or vice versa)
+## Design
+- Rose/pink color scheme (#f43f5e primary)
+- Mobile-first, warm and inviting
+- Key UI: stamp card circles that fill up visually
+- Customer-facing pages should feel delightful
 
-## Pricing Model
-- Free: 1 card template, 50 customers
-- Pro (€10/month): unlimited cards, SMS notifications, full analytics
+## Commands
+- `npm run dev` — Start dev server
+- `npm run build` — Production build
+- `npx prisma generate` — Generate Prisma client
+- `npx prisma db push` — Push schema to database
 
-## Development Guidelines
-- Type hints everywhere (strict TypeScript)
-- Error handling on all API routes
-- Comments explain WHY, not what
-- Tests exercise real code — no mocks
-- Conventional commits: feat:, fix:, chore:
-- main branch is always shippable
+## Notes
+- All API routes return mock data (no DB connected yet)
+- Auth is placeholder (redirects directly to dashboard)
+- QR code on the counter page is a visual placeholder

@@ -24,18 +24,38 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const customers = await prisma.customer.findMany({
+    const totalCustomers = await prisma.customer.count({
       where: { businessId: business.id },
-      orderBy: { createdAt: "desc" },
+    });
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const stampsToday = await prisma.customer.count({
+      where: {
+        businessId: business.id,
+        lastStampAt: { gte: today },
+      },
+    });
+
+    const totalRewards = await prisma.customer.aggregate({
+      where: { businessId: business.id },
+      _sum: { totalRewards: true },
     });
 
     return NextResponse.json({
-      customers,
-      stampsNeeded: business.stampsNeeded,
-      rewardText: business.rewardText,
+      totalCustomers,
+      stampsToday,
+      totalRewardsRedeemed: totalRewards._sum.totalRewards ?? 0,
+      business: {
+        name: business.name,
+        slug: business.slug,
+        stampsNeeded: business.stampsNeeded,
+        rewardText: business.rewardText,
+      },
     });
   } catch (error) {
-    console.error("Customers list error:", error);
+    console.error("Stats error:", error);
     return NextResponse.json(
       { error: "Erro interno do servidor" },
       { status: 500 }

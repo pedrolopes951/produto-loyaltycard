@@ -9,6 +9,7 @@ import {
   ArrowRight,
   Menu,
   X,
+  Smartphone,
 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
@@ -32,7 +33,7 @@ function StampCardVisual() {
             key={i}
             className={`w-10 h-10 rounded-full border-2 flex items-center justify-center transition-all ${
               filled
-                ? "bg-rose-500 border-rose-500 scale-100"
+                ? "bg-rose-500 border-rose-500"
                 : "border-rose-200 bg-rose-50"
             }`}
           >
@@ -51,28 +52,28 @@ function StampCardVisual() {
 
 const features = [
   {
-    icon: Stamp,
+    icon: Smartphone,
     title: "Sem App Necessaria",
     description:
-      "Funciona como PWA direto no navegador. Os seus clientes nao precisam instalar nada.",
+      "O cliente so precisa do numero de telefone. Sem downloads, sem contas, sem complicacoes.",
   },
   {
     icon: QrCode,
     title: "QR Code no Balcao",
     description:
-      "Imprima o QR e coloque no balcao. O cliente digitaliza e recebe o carimbo automaticamente.",
+      "Imprima o QR e coloque no balcao. O cliente digitaliza para ver os seus carimbos a qualquer momento.",
   },
   {
     icon: Gift,
-    title: "Recompensas Personalizaveis",
+    title: "Recompensas Simples",
     description:
       "Cafe gratis, desconto, pastel de nata - defina a recompensa que faz sentido para o seu negocio.",
   },
   {
     icon: BarChart3,
-    title: "Analytics de Fidelizacao",
+    title: "Painel de Controlo",
     description:
-      "Veja quantos clientes voltam, quais recompensas funcionam e otimize o seu programa.",
+      "Veja quantos clientes tem, carimbos dados hoje, e recompensas resgatadas. Tudo em tempo real.",
   },
 ];
 
@@ -94,17 +95,20 @@ export default function LandingPage() {
             <a href="#funcionalidades" className="text-gray-600 hover:text-rose-600 text-sm font-medium">
               Funcionalidades
             </a>
-            <a href="#precos" className="text-gray-600 hover:text-rose-600 text-sm font-medium">
-              Precos
+            <a href="#como-funciona" className="text-gray-600 hover:text-rose-600 text-sm font-medium">
+              Como Funciona
             </a>
-            <Link href="/entrar" className="text-gray-600 hover:text-rose-600 text-sm font-medium">
-              Entrar
+            <Link
+              href="/painel"
+              className="text-gray-600 hover:text-rose-600 text-sm font-medium"
+            >
+              Painel
             </Link>
             <Link
-              href="/registar"
+              href="/c/cafe-central"
               className="bg-rose-500 hover:bg-rose-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
             >
-              Comecar Gratis
+              Ver Demo
             </Link>
           </div>
           <button
@@ -119,17 +123,17 @@ export default function LandingPage() {
             <a href="#funcionalidades" className="block text-gray-600 text-sm font-medium">
               Funcionalidades
             </a>
-            <a href="#precos" className="block text-gray-600 text-sm font-medium">
-              Precos
+            <a href="#como-funciona" className="block text-gray-600 text-sm font-medium">
+              Como Funciona
             </a>
-            <Link href="/entrar" className="block text-gray-600 text-sm font-medium">
-              Entrar
+            <Link href="/painel" className="block text-gray-600 text-sm font-medium">
+              Painel
             </Link>
             <Link
-              href="/registar"
+              href="/c/cafe-central"
               className="block bg-rose-500 text-white text-center px-4 py-2 rounded-lg text-sm font-medium"
             >
-              Comecar Gratis
+              Ver Demo
             </Link>
           </div>
         )}
@@ -144,23 +148,23 @@ export default function LandingPage() {
               <span className="text-rose-500">Ola fidelizacao digital.</span>
             </h1>
             <p className="mt-6 text-lg text-gray-600 max-w-xl mx-auto lg:mx-0">
-              Os seus clientes acumulam pontos pelo telemovel. Sem app. Sem papel.
-              So resultados.
+              Os seus clientes dao o numero de telefone, recebem carimbos digitais
+              e resgatam recompensas. Sem app. Sem papel. So resultados.
             </p>
             <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
               <Link
-                href="/registar"
+                href="/c/cafe-central"
                 className="bg-rose-500 hover:bg-rose-600 text-white px-8 py-3 rounded-xl text-lg font-semibold transition-colors inline-flex items-center justify-center gap-2"
               >
-                Comecar Gratis
+                Ver Demo
                 <ArrowRight className="w-5 h-5" />
               </Link>
-              <a
-                href="#funcionalidades"
+              <Link
+                href="/painel"
                 className="border-2 border-rose-200 hover:border-rose-300 text-rose-600 px-8 py-3 rounded-xl text-lg font-semibold transition-colors inline-flex items-center justify-center"
               >
-                Ver Como Funciona
-              </a>
+                Abrir Painel
+              </Link>
             </div>
           </div>
           <div className="flex-1 flex justify-center">
@@ -175,16 +179,28 @@ export default function LandingPage() {
       </section>
 
       {/* How It Works */}
-      <section className="py-20 bg-rose-50 px-4">
+      <section id="como-funciona" className="py-20 bg-rose-50 px-4">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-12">
             Como Funciona
           </h2>
           <div className="grid md:grid-cols-3 gap-8">
             {[
-              { step: "1", title: "Crie o seu cartao", desc: "Personalize o numero de carimbos, a recompensa e as cores." },
-              { step: "2", title: "Cliente digitaliza o QR", desc: "Coloque o QR no balcao. O cliente digitaliza com o telemovel." },
-              { step: "3", title: "Recebe a recompensa", desc: "Ao completar o cartao, o cliente resgata a recompensa." },
+              {
+                step: "1",
+                title: "Cliente da o telefone",
+                desc: "O funcionario introduz o numero do cliente na pagina de carimbo e adiciona 1 carimbo.",
+              },
+              {
+                step: "2",
+                title: "Carimbos acumulam",
+                desc: "A cada visita, o cliente recebe um carimbo. Pode ver o progresso digitalizando o QR do balcao.",
+              },
+              {
+                step: "3",
+                title: "Recompensa!",
+                desc: "Ao atingir o numero de carimbos, o cliente resgata a recompensa. Simples.",
+              },
             ].map((item) => (
               <div key={item.step} className="bg-white rounded-2xl p-6 shadow-sm">
                 <div className="w-12 h-12 bg-rose-500 text-white rounded-full flex items-center justify-center text-xl font-bold mx-auto mb-4">
@@ -221,75 +237,6 @@ export default function LandingPage() {
                 <p className="text-gray-600 text-sm">{feature.description}</p>
               </div>
             ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Pricing */}
-      <section id="precos" className="py-20 bg-rose-50 px-4">
-        <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-            Precos Simples
-          </h2>
-          <p className="text-gray-600 mb-12">
-            Comece gratis. Escale quando quiser.
-          </p>
-          <div className="grid md:grid-cols-2 gap-6 max-w-2xl mx-auto">
-            {/* Free */}
-            <div className="bg-white rounded-2xl p-8 border border-rose-100 text-left">
-              <p className="text-sm font-semibold text-rose-500 mb-1">Gratuito</p>
-              <p className="text-4xl font-bold text-gray-900 mb-1">
-                &euro;0<span className="text-base font-normal text-gray-500">/mes</span>
-              </p>
-              <p className="text-sm text-gray-500 mb-6">Para experimentar</p>
-              <ul className="space-y-3 mb-8">
-                {["1 cartao de fidelidade", "Ate 50 clientes", "QR code no balcao", "Recompensas basicas"].map(
-                  (item) => (
-                    <li key={item} className="flex items-center gap-2 text-sm text-gray-700">
-                      <Check className="w-4 h-4 text-green-500 shrink-0" />
-                      {item}
-                    </li>
-                  )
-                )}
-              </ul>
-              <Link
-                href="/registar"
-                className="block text-center border-2 border-rose-200 text-rose-600 px-6 py-2.5 rounded-xl font-medium hover:bg-rose-50 transition-colors"
-              >
-                Comecar Gratis
-              </Link>
-            </div>
-            {/* Pro */}
-            <div className="bg-white rounded-2xl p-8 border-2 border-rose-500 text-left relative">
-              <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-rose-500 text-white text-xs font-semibold px-3 py-1 rounded-full">
-                Mais Popular
-              </div>
-              <p className="text-sm font-semibold text-rose-500 mb-1">Pro</p>
-              <p className="text-4xl font-bold text-gray-900 mb-1">
-                &euro;10<span className="text-base font-normal text-gray-500">/mes</span>
-              </p>
-              <p className="text-sm text-gray-500 mb-6">Para negocios a serio</p>
-              <ul className="space-y-3 mb-8">
-                {[
-                  "Cartoes ilimitados",
-                  "Clientes ilimitados",
-                  "Notificacoes por SMS",
-                  "Analytics de fidelizacao",
-                  "Suporte prioritario",
-                ].map((item) => (
-                  <li key={item} className="flex items-center gap-2 text-sm text-gray-700">
-                    <Check className="w-4 h-4 text-green-500 shrink-0" />
-                    {item}
-                  </li>
-                ))}
-              </ul>
-              <Link
-                href="/registar"
-                className="block text-center bg-rose-500 hover:bg-rose-600 text-white px-6 py-2.5 rounded-xl font-medium transition-colors"
-              >
-                Comecar Agora
-              </Link>
-            </div>
           </div>
         </div>
       </section>

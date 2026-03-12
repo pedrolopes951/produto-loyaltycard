@@ -8,94 +8,24 @@ datasource db {
 }
 
 model Business {
-  id        String   @id @default(cuid())
-  name      String
-  slug      String   @unique
-  type      String   // cafe, padaria, salao, barbearia
-  userId    String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  loyaltyCards LoyaltyCard[]
+  id           String     @id @default(cuid())
+  name         String
+  slug         String     @unique
+  stampsNeeded Int        @default(10)
+  rewardText   String     @default("1 cafe gratis!")
+  createdAt    DateTime   @default(now())
   customers    Customer[]
-  rewards      Reward[]
-}
-
-model LoyaltyCard {
-  id             String   @id @default(cuid())
-  name           String
-  description    String?
-  stampsRequired Int
-  reward         String
-  color          String   @default("#f43f5e")
-  isActive       Boolean  @default(true)
-  businessId     String
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-
-  business      Business       @relation(fields: [businessId], references: [id])
-  customerCards CustomerCard[]
-  rewards       Reward[]
 }
 
 model Customer {
-  id         String   @id @default(cuid())
-  name       String?
-  phone      String?
-  email      String?
-  businessId String
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id           String    @id @default(cuid())
+  phone        String
+  businessId   String
+  business     Business  @relation(fields: [businessId], references: [id])
+  stamps       Int       @default(0)
+  totalRewards Int       @default(0)
+  lastStampAt  DateTime?
+  createdAt    DateTime  @default(now())
 
-  business      Business           @relation(fields: [businessId], references: [id])
-  customerCards CustomerCard[]
-  redemptions   RewardRedemption[]
-}
-
-model CustomerCard {
-  id            String    @id @default(cuid())
-  customerId    String
-  loyaltyCardId String
-  currentStamps Int       @default(0)
-  isComplete    Boolean   @default(false)
-  completedAt   DateTime?
-  createdAt     DateTime  @default(now())
-
-  customer    Customer    @relation(fields: [customerId], references: [id])
-  loyaltyCard LoyaltyCard @relation(fields: [loyaltyCardId], references: [id])
-  stamps      Stamp[]
-}
-
-model Stamp {
-  id             String   @id @default(cuid())
-  customerCardId String
-  scannedAt      DateTime @default(now())
-  staffNote      String?
-
-  customerCard CustomerCard @relation(fields: [customerCardId], references: [id])
-}
-
-model Reward {
-  id             String   @id @default(cuid())
-  name           String
-  description    String?
-  stampsRequired Int
-  timesRedeemed  Int      @default(0)
-  loyaltyCardId  String
-  businessId     String
-  createdAt      DateTime @default(now())
-
-  loyaltyCard LoyaltyCard        @relation(fields: [loyaltyCardId], references: [id])
-  business    Business            @relation(fields: [businessId], references: [id])
-  redemptions RewardRedemption[]
-}
-
-model RewardRedemption {
-  id         String   @id @default(cuid())
-  rewardId   String
-  customerId String
-  redeemedAt DateTime @default(now())
-
-  reward   Reward   @relation(fields: [rewardId], references: [id])
-  customer Customer @relation(fields: [customerId], references: [id])
+  @@unique([phone, businessId])
 }

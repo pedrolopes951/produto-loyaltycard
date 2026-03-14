@@ -2,55 +2,33 @@
 
 import { Users, Stamp, Gift } from "lucide-react";
 import { useEffect, useState } from "react";
+import Link from "next/link";
 
 const BUSINESS_SLUG = "cafe-central";
+const BUSINESS_NAME = "Cafe Central";
+const STAMPS_NEEDED = 10;
 
-interface Stats {
-  totalCustomers: number;
-  stampsToday: number;
-  totalRewardsRedeemed: number;
-  business: {
-    name: string;
-    stampsNeeded: number;
-    rewardText: string;
-  };
-}
-
-interface CustomerRow {
-  id: string;
-  phone: string;
+interface CustomerData {
   stamps: number;
   totalRewards: number;
-  lastStampAt: string | null;
-  createdAt: string;
+}
+
+function loadCustomers(): Record<string, CustomerData> {
+  if (typeof window === "undefined") return {};
+  const raw = localStorage.getItem(`loyaltycard-${BUSINESS_SLUG}`);
+  return raw ? JSON.parse(raw) : {};
 }
 
 export default function PainelPage() {
-  const [stats, setStats] = useState<Stats | null>(null);
-  const [customers, setCustomers] = useState<CustomerRow[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [customers, setCustomers] = useState<Record<string, CustomerData>>({});
+  const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    async function load() {
-      try {
-        const [statsRes, custRes] = await Promise.all([
-          fetch(`/api/stats?businessSlug=${BUSINESS_SLUG}`),
-          fetch(`/api/customers?businessSlug=${BUSINESS_SLUG}`),
-        ]);
-        const statsData = await statsRes.json();
-        const custData = await custRes.json();
-        setStats(statsData);
-        setCustomers(custData.customers ?? []);
-      } catch {
-        // ignore
-      } finally {
-        setLoading(false);
-      }
-    }
-    load();
+    setCustomers(loadCustomers());
+    setLoaded(true);
   }, []);
 
-  if (loading) {
+  if (!loaded) {
     return (
       <div className="flex items-center justify-center h-64">
         <p className="text-gray-400">A carregar...</p>
@@ -58,57 +36,42 @@ export default function PainelPage() {
     );
   }
 
+  const entries = Object.entries(customers);
+  const totalCustomers = entries.length;
+  const totalRewardsRedeemed = entries.reduce((sum, [, c]) => sum + c.totalRewards, 0);
+  const totalStamps = entries.reduce((sum, [, c]) => sum + c.stamps, 0);
+
   const statCards = [
-    {
-      label: "Total Clientes",
-      value: stats?.totalCustomers ?? 0,
-      icon: Users,
-      color: "bg-rose-50 text-rose-600",
-    },
-    {
-      label: "Carimbos Hoje",
-      value: stats?.stampsToday ?? 0,
-      icon: Stamp,
-      color: "bg-pink-50 text-pink-600",
-    },
-    {
-      label: "Recompensas Resgatadas",
-      value: stats?.totalRewardsRedeemed ?? 0,
-      icon: Gift,
-      color: "bg-green-50 text-green-600",
-    },
+    { label: "Total Clientes", value: totalCustomers, icon: Users, color: "bg-rose-50 text-rose-600" },
+    { label: "Carimbos Dados", value: totalStamps, icon: Stamp, color: "bg-pink-50 text-pink-600" },
+    { label: "Recompensas Resgatadas", value: totalRewardsRedeemed, icon: Gift, color: "bg-green-50 text-green-600" },
   ];
 
-  // Recent customers (sorted by last stamp)
-  const recent = [...customers]
-    .filter((c) => c.lastStampAt)
-    .sort(
-      (a, b) =>
-        new Date(b.lastStampAt!).getTime() -
-        new Date(a.lastStampAt!).getTime()
-    )
-    .slice(0, 10);
+  const sorted = entries.sort(([, a], [, b]) => b.stamps - a.stamps);
 
   return (
     <div>
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-900">Painel</h1>
-        <p className="text-sm text-gray-500 mt-1">
-          Visao geral do seu programa de fidelizacao
-        </p>
+      <div className="mb-8 flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Painel</h1>
+          <p className="text-sm text-gray-500 mt-1">
+            {BUSINESS_NAME} — Visao geral do programa de fidelizacao
+          </p>
+        </div>
+        <Link
+          href={`/carimbo/${BUSINESS_SLUG}`}
+          className="bg-rose-500 hover:bg-rose-600 text-white px-5 py-2.5 rounded-xl text-sm font-medium transition-colors inline-flex items-center gap-2"
+        >
+          <Stamp className="w-4 h-4" />
+          Carimbar
+        </Link>
       </div>
 
-      {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
         {statCards.map((stat) => (
-          <div
-            key={stat.label}
-            className="bg-white rounded-2xl p-5 border border-gray-100"
-          >
+          <div key={stat.label} className="bg-white rounded-2xl p-5 border border-gray-100">
             <div className="flex items-center justify-between mb-3">
-              <div
-                className={`w-10 h-10 rounded-xl flex items-center justify-center ${stat.color}`}
-              >
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${stat.color}`}>
                 <stat.icon className="w-5 h-5" />
               </div>
             </div>
@@ -118,44 +81,31 @@ export default function PainelPage() {
         ))}
       </div>
 
-      {/* Recent Activity */}
       <div className="bg-white rounded-2xl border border-gray-100">
         <div className="p-5 border-b border-gray-100">
-          <h2 className="text-lg font-semibold text-gray-900">
-            Atividade Recente
-          </h2>
+          <h2 className="text-lg font-semibold text-gray-900">Clientes</h2>
         </div>
-        {recent.length === 0 ? (
+        {sorted.length === 0 ? (
           <div className="p-8 text-center text-gray-400 text-sm">
-            Ainda sem atividade. Carimbos aparecerao aqui.
+            Ainda sem clientes. Vai a <Link href={`/carimbo/${BUSINESS_SLUG}`} className="text-rose-500 hover:text-rose-600">pagina de carimbos</Link> para comecar.
           </div>
         ) : (
           <div className="divide-y divide-gray-50">
-            {recent.map((c) => (
-              <div
-                key={c.id}
-                className="px-5 py-4 flex items-center justify-between"
-              >
+            {sorted.map(([phone, c]) => (
+              <div key={phone} className="px-5 py-4 flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="w-9 h-9 bg-rose-100 rounded-full flex items-center justify-center">
-                    <span className="text-rose-600 font-semibold text-xs">
-                      {c.phone.slice(-2)}
-                    </span>
+                    <span className="text-rose-600 font-semibold text-xs">{phone.slice(-2)}</span>
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-gray-900">
-                      {c.phone}
-                    </p>
-                    <p className="text-xs text-gray-400">
-                      Ultimo carimbo:{" "}
-                      {c.lastStampAt
-                        ? new Date(c.lastStampAt).toLocaleDateString("pt-PT")
-                        : "-"}
-                    </p>
+                    <p className="text-sm font-medium text-gray-900">{phone}</p>
+                    {c.totalRewards > 0 && (
+                      <p className="text-xs text-gray-400">{c.totalRewards} recompensa{c.totalRewards > 1 ? "s" : ""} resgatada{c.totalRewards > 1 ? "s" : ""}</p>
+                    )}
                   </div>
                 </div>
                 <span className="text-xs font-medium text-rose-500 bg-rose-50 px-2.5 py-1 rounded-full">
-                  {c.stamps}/{stats?.business.stampsNeeded ?? 10}
+                  {c.stamps}/{STAMPS_NEEDED}
                 </span>
               </div>
             ))}

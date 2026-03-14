@@ -1,148 +1,123 @@
 "use client";
 
-import { Check, Gift, Stamp, ArrowRight, RotateCcw } from "lucide-react";
+import { Check, Gift, Stamp, RotateCcw } from "lucide-react";
 import { useParams } from "next/navigation";
 import { useState, useEffect } from "react";
 
-interface BusinessData {
-  name: string;
-  slug: string;
-  stampsNeeded: number;
-  rewardText: string;
-}
+// Demo businesses — localStorage-backed, no server needed
+const DEMO_BUSINESSES: Record<string, { name: string; stampsNeeded: number; rewardText: string }> = {
+  "cafe-central": { name: "Cafe Central", stampsNeeded: 10, rewardText: "1 cafe gratis!" },
+  "padaria-nova": { name: "Padaria Nova", stampsNeeded: 8, rewardText: "1 pastel de nata gratis!" },
+  "barbeiro-classic": { name: "Barbeiro Classic", stampsNeeded: 5, rewardText: "1 corte gratis!" },
+};
 
-interface StampResult {
-  phone: string;
+interface CustomerData {
   stamps: number;
   totalRewards: number;
-  stampsNeeded: number;
-  rewardText: string;
+}
+
+function getStorageKey(slug: string) {
+  return `loyaltycard-${slug}`;
+}
+
+function loadCustomers(slug: string): Record<string, CustomerData> {
+  if (typeof window === "undefined") return {};
+  const raw = localStorage.getItem(getStorageKey(slug));
+  return raw ? JSON.parse(raw) : {};
+}
+
+function saveCustomers(slug: string, customers: Record<string, CustomerData>) {
+  localStorage.setItem(getStorageKey(slug), JSON.stringify(customers));
 }
 
 export default function CarimboPage() {
   const params = useParams();
   const slug = params.slug as string;
 
-  const [business, setBusiness] = useState<BusinessData | null>(null);
+  const business = DEMO_BUSINESSES[slug] ?? { name: slug, stampsNeeded: 10, rewardText: "1 gratis!" };
+
   const [phone, setPhone] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<StampResult | null>(null);
+  const [result, setResult] = useState<{ stamps: number; totalRewards: number; stampsNeeded: number; rewardText: string } | null>(null);
   const [rewardUnlocked, setRewardUnlocked] = useState(false);
-  const [error, setError] = useState("");
-  const [redeeming, setRedeeming] = useState(false);
   const [redeemed, setRedeemed] = useState(false);
 
-  useEffect(() => {
-    fetch(`/api/business/${slug}`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.business) setBusiness(data.business);
-      })
-      .catch(() => {});
-  }, [slug]);
-
-  async function handleStamp(e: React.FormEvent) {
+  function handleStamp(e: React.FormEvent) {
     e.preventDefault();
     if (!phone.trim()) return;
 
-    setLoading(true);
-    setError("");
-    setResult(null);
-    setRewardUnlocked(false);
+    const customers = loadCustomers(slug);
+    const key = phone.trim();
+    const customer = customers[key] ?? { stamps: 0, totalRewards: 0 };
+
+    customer.stamps += 1;
+    const unlocked = customer.stamps >= business.stampsNeeded;
+
+    customers[key] = customer;
+    saveCustomers(slug, customers);
+
+    setResult({
+      stamps: customer.stamps,
+      totalRewards: customer.totalRewards,
+      stampsNeeded: business.stampsNeeded,
+      rewardText: business.rewardText,
+    });
+    setRewardUnlocked(unlocked);
     setRedeemed(false);
-
-    try {
-      const res = await fetch("/api/stamps", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ businessSlug: slug, phone: phone.trim() }),
-      });
-      const data = await res.json();
-
-      if (res.status === 429) {
-        setError(data.error);
-        if (data.customer) {
-          setResult(data.customer);
-        }
-        return;
-      }
-
-      if (!res.ok) {
-        setError(data.error || "Erro ao carimbar");
-        return;
-      }
-
-      setResult(data.customer);
-      setRewardUnlocked(data.rewardUnlocked);
-    } catch {
-      setError("Erro de ligacao. Tente novamente.");
-    } finally {
-      setLoading(false);
-    }
   }
 
-  async function handleRedeem() {
-    setRedeeming(true);
-    try {
-      const res = await fetch("/api/rewards/redeem", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ businessSlug: slug, phone: phone.trim() }),
-      });
-      const data = await res.json();
+  function handleRedeem() {
+    const customers = loadCustomers(slug);
+    const key = phone.trim();
+    const customer = customers[key];
+    if (!customer) return;
 
-      if (!res.ok) {
-        setError(data.error || "Erro ao resgatar");
-        return;
-      }
+    customer.stamps = 0;
+    customer.totalRewards += 1;
+    customers[key] = customer;
+    saveCustomers(slug, customers);
 
-      setRedeemed(true);
-      setResult(data.customer);
-      setRewardUnlocked(false);
-    } catch {
-      setError("Erro de ligacao.");
-    } finally {
-      setRedeeming(false);
-    }
+    setRedeemed(true);
+    setRewardUnlocked(false);
+    setResult({
+      stamps: 0,
+      totalRewards: customer.totalRewards,
+      stampsNeeded: business.stampsNeeded,
+      rewardText: business.rewardText,
+    });
   }
 
   function handleReset() {
     setPhone("");
     setResult(null);
     setRewardUnlocked(false);
-    setError("");
     setRedeemed(false);
   }
 
-  // Result screen
-  if (result && !error) {
+  // Result screen — shown to customer
+  if (result) {
     const progress = (result.stamps / result.stampsNeeded) * 100;
 
     return (
       <div className="min-h-screen bg-gradient-to-b from-rose-50 to-white flex items-center justify-center px-4">
         <div className="max-w-sm w-full text-center">
-          {/* Success / Reward Animation */}
-          <div className="mb-6 animate-fade-in-up">
+          <div className="mb-6">
             {rewardUnlocked ? (
-              <div className="w-20 h-20 bg-yellow-400 rounded-full flex items-center justify-center mx-auto mb-4 animate-checkmark">
+              <div className="w-20 h-20 bg-yellow-400 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Gift className="w-10 h-10 text-white" />
               </div>
             ) : redeemed ? (
-              <div className="w-20 h-20 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-4 animate-checkmark">
+              <div className="w-20 h-20 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Check className="w-10 h-10 text-white" />
               </div>
             ) : (
-              <div className="w-20 h-20 bg-rose-500 rounded-full flex items-center justify-center mx-auto mb-4 animate-checkmark">
+              <div className="w-20 h-20 bg-rose-500 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Check className="w-10 h-10 text-white" />
               </div>
             )}
           </div>
 
-          <div
-            className="animate-fade-in-up"
-            style={{ animationDelay: "0.2s", animationFillMode: "both" }}
-          >
-            <p className="text-sm text-gray-500 mb-1">{business?.name}</p>
+          <div>
+            <p className="text-sm text-gray-500 mb-1">{business.name}</p>
             <h1 className="text-2xl font-bold text-gray-900 mb-1">
               {redeemed
                 ? "Recompensa resgatada!"
@@ -153,12 +128,8 @@ export default function CarimboPage() {
             <p className="text-sm text-gray-500">{phone}</p>
           </div>
 
-          {/* Progress Card */}
-          <div
-            className="bg-white rounded-2xl shadow-lg p-6 mt-6 border border-rose-100 animate-fade-in-up"
-            style={{ animationDelay: "0.4s", animationFillMode: "both" }}
-          >
-            {/* Stamp dots */}
+          {/* Progress Card — flip phone to show customer */}
+          <div className="bg-white rounded-2xl shadow-lg p-6 mt-6 border border-rose-100">
             <div className="flex items-center justify-center gap-2 mb-4 flex-wrap">
               {Array.from({ length: result.stampsNeeded }).map((_, i) => {
                 const filled = i < result.stamps;
@@ -177,7 +148,6 @@ export default function CarimboPage() {
               })}
             </div>
 
-            {/* Progress Bar */}
             <div className="h-2.5 bg-gray-100 rounded-full overflow-hidden mb-3">
               <div
                 className="h-full rounded-full transition-all duration-1000 ease-out bg-rose-500"
@@ -196,10 +166,9 @@ export default function CarimboPage() {
                 </p>
                 <button
                   onClick={handleRedeem}
-                  disabled={redeeming}
-                  className="bg-yellow-400 hover:bg-yellow-500 disabled:bg-yellow-200 text-gray-900 px-6 py-2.5 rounded-xl font-medium text-sm transition-colors"
+                  className="bg-yellow-400 hover:bg-yellow-500 text-gray-900 px-6 py-2.5 rounded-xl font-medium text-sm transition-colors"
                 >
-                  {redeeming ? "A resgatar..." : "Resgatar Recompensa"}
+                  Resgatar Recompensa
                 </button>
               </div>
             )}
@@ -221,11 +190,7 @@ export default function CarimboPage() {
             )}
           </div>
 
-          {/* Next customer button */}
-          <div
-            className="mt-6 animate-fade-in-up"
-            style={{ animationDelay: "0.6s", animationFillMode: "both" }}
-          >
+          <div className="mt-6">
             <button
               onClick={handleReset}
               className="inline-flex items-center gap-2 text-sm font-medium text-rose-500 hover:text-rose-600 transition-colors"
@@ -235,7 +200,6 @@ export default function CarimboPage() {
             </button>
           </div>
 
-          {/* Footer */}
           <div className="mt-12">
             <p className="text-xs text-gray-400">
               Powered by{" "}
@@ -247,7 +211,7 @@ export default function CarimboPage() {
     );
   }
 
-  // Stamp input screen
+  // Stamp input screen — owner types phone number
   return (
     <div className="min-h-screen bg-gradient-to-b from-rose-50 to-white flex items-center justify-center px-4">
       <div className="max-w-sm w-full">
@@ -256,7 +220,7 @@ export default function CarimboPage() {
             <Stamp className="w-8 h-8 text-white" />
           </div>
           <h1 className="text-2xl font-bold text-gray-900">
-            {business?.name ?? "A carregar..."}
+            {business.name}
           </h1>
           <p className="text-sm text-gray-500 mt-2">
             Introduza o telefone do cliente para carimbar
@@ -283,27 +247,15 @@ export default function CarimboPage() {
             />
           </div>
 
-          {error && (
-            <p className="text-sm text-red-500 text-center">{error}</p>
-          )}
-
           <button
             type="submit"
-            disabled={loading}
-            className="w-full bg-rose-500 hover:bg-rose-600 disabled:bg-rose-300 text-white py-3 rounded-xl font-semibold text-lg transition-colors flex items-center justify-center gap-2"
+            className="w-full bg-rose-500 hover:bg-rose-600 text-white py-3 rounded-xl font-semibold text-lg transition-colors flex items-center justify-center gap-2"
           >
-            {loading ? (
-              "A carimbar..."
-            ) : (
-              <>
-                <Stamp className="w-5 h-5" />
-                Carimbar
-              </>
-            )}
+            <Stamp className="w-5 h-5" />
+            Carimbar
           </button>
         </form>
 
-        {/* Footer */}
         <div className="text-center mt-12">
           <p className="text-xs text-gray-400">
             Powered by{" "}
